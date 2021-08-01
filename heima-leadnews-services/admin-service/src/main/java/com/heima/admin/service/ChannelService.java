@@ -10,4 +10,8 @@ public interface ChannelService {
     ResponseResult findPage(ChannelDto channelDto);
 
     ResponseResult add(AdChannel adChannel);
+
+    ResponseResult update(AdChannel adChannel);
+
+    ResponseResult delete(Integer id);
 }

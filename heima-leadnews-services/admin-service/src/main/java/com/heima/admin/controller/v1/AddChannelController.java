@@ -7,10 +7,7 @@ import com.heima.model.common.dtos.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/channel")
@@ -30,5 +27,17 @@ public class AddChannelController {
     @ApiOperation("添加新的频道")
     public ResponseResult save(@RequestBody AdChannel adChannel){
         return channelService.add(adChannel);
+    }
+
+    @PostMapping("/update")
+    @ApiOperation("修改频道内容")
+    public ResponseResult update(@RequestBody AdChannel adChannel){
+        return channelService.update(adChannel);
+    }
+
+    @GetMapping("/delete/{id}")
+    @ApiOperation("删除频道")
+    public ResponseResult delete(@PathVariable("id") Integer id){
+        return channelService.delete(id);
     }
 }
