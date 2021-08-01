@@ -2,6 +2,7 @@ package com.heima.admin.controller.v1;
 
 import com.heima.admin.service.ChannelService;
 import com.heima.model.admin.dtos.ChannelDto;
+import com.heima.model.admin.pojos.AdChannel;
 import com.heima.model.common.dtos.ResponseResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -23,5 +24,11 @@ public class AddChannelController {
     @ApiOperation("频道分页列表查询")
     public ResponseResult list(@RequestBody ChannelDto channelDto){
         return channelService.findPage(channelDto);
+    }
+
+    @PostMapping("/save")
+    @ApiOperation("添加新的频道")
+    public ResponseResult save(@RequestBody AdChannel adChannel){
+        return channelService.add(adChannel);
     }
 }

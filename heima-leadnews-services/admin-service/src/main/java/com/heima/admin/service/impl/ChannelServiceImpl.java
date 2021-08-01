@@ -15,6 +15,7 @@ import com.heima.model.common.enums.AppHttpCodeEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 @Service("adminService")
@@ -39,5 +40,25 @@ public class ChannelServiceImpl extends ServiceImpl<ChannelMapper, AdChannel> im
         List<AdChannel> records = result.getRecords();
         long total = result.getTotal();
         return new PageResponseResult(channelDto.getPage(), channelDto.getSize(), total, records);
+    }
+
+    @Override
+    public ResponseResult add(AdChannel adChannel) {
+
+        //1.判断参数
+        if (adChannel==null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID,"无数据");
+        }
+        //查询添加的名称是否存在
+        int count = this.count(Wrappers.<AdChannel>lambdaQuery().eq(AdChannel::getName, adChannel.getName()));
+        if (count>0){
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID,"名称已存在");
+        }
+        //2.创建添加语句
+        adChannel.setCreatedTime(new Date());
+        save(adChannel);
+        //3.返回结果
+        return ResponseResult.okResult();
+
     }
 }
