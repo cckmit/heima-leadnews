@@ -1,8 +1,7 @@
 # heima-leadnews
 #### 介绍
-黑马头条后端微服务基础代码
-有任何可以联系我:97leem_
-前端链接: https://gitee.com/xiaoT_CJ/heima-leadnews-front
+黑马头条后端项目搭建
+- 有任何可以联系我:97leem_
 
 #### 软件架构
 
