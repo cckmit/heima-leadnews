@@ -37,7 +37,7 @@ public class AddChannelController {
         return channelService.update(adChannel);
     }
 
-    @GetMapping("/delete/{id}")
+    @GetMapping("/del/{id}")
     @ApiOperation("删除频道")
     public ResponseResult delete(@PathVariable("id") Integer id){
         return channelService.delete(id);

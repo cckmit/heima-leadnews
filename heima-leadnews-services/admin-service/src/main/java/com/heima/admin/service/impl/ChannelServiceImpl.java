@@ -69,13 +69,25 @@ public class ChannelServiceImpl extends ServiceImpl<ChannelMapper, AdChannel> im
         if (adChannel == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID, "修改内容为空");
         }
-        int count = count(Wrappers.<AdChannel>lambdaQuery().eq(AdChannel::getName, adChannel.getName()));
-        if (count > 0) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID, "修改的内容已存在");
+        //2 执行修改
+        AdChannel channel = getById(adChannel.getId());
+        if (channel == null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "频道信息不存在");
         }
-        //2.创建更新条件
+        //3.校验名称唯一性
+        //3. 校验名称唯一性
+        if (StringUtils.isNotBlank(adChannel.getName())
+                &&
+                !adChannel.getName().equals(channel.getName())) {
+            int count = this.count(Wrappers.<AdChannel>lambdaQuery()
+                    .eq(AdChannel::getName, adChannel.getName()));
+            if (count > 0) {
+                return ResponseResult.errorResult(AppHttpCodeEnum.DATA_EXIST, "该频道已存在");
+            }
+        }
+        //4.创建更新条件
         updateById(adChannel);
-        //3.返回结果
+        //5.返回结果
         return ResponseResult.okResult();
 
     }
@@ -91,7 +103,7 @@ public class ChannelServiceImpl extends ServiceImpl<ChannelMapper, AdChannel> im
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "此频道不存在");
         }
         if (channel.getStatus()) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_REQUIRE,"当前频道为启用状态，无法删除");
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_REQUIRE, "当前频道为启用状态，无法删除");
         }
         //2.创建删除条件语句
         removeById(id);
