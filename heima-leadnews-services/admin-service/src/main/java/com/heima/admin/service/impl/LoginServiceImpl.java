@@ -61,6 +61,7 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, AdUser> implement
         updateById(user);
         // 6. 生成token 封装返回结果   {user: {用户信息}  ,  token: "令牌凭证" }
         String token = AppJwtUtil.getToken(Long.valueOf(user.getId()));
+        System.out.println(token);
         AdUserVO adUserVO = new AdUserVO();
         BeanUtils.copyProperties(user, adUserVO);
         Map map = new HashMap<>();
