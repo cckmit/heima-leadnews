@@ -16,9 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.*;
 
 @Service("loginService")
 @Slf4j
@@ -79,7 +78,7 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, AdUser> implement
             CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST, "注册信息为空");
         }
         //检查注册的用户是否存在
-        int count = count(Wrappers.<AdUser>lambdaQuery().eq(AdUser::toString, adUser.toString()));
+        int count = count(Wrappers.<AdUser>lambdaQuery().eq(AdUser::getName, adUser.getName()).eq(AdUser::getPassword, adUser.getPassword()).eq(AdUser::getEmail, adUser.getPassword()));
         if (count > 0) {
             CustException.cust(AppHttpCodeEnum.DATA_EXIST, "当前用户已经注册");
         }
