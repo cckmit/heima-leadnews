@@ -25,3 +25,9 @@ spring:
             - Path=/admin/**
           filters:
             - StripPrefix= 1
+        - id: user
+          uri: lb://leadnews-user
+          predicates:
+            - Path=/user/**
+          filters:
+            - StripPrefix= 1
