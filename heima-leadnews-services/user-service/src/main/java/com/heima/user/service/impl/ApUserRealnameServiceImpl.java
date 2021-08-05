@@ -84,6 +84,12 @@ public class ApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMapper,
         if (status == 2) {
             return ResponseResult.okResult("认证状态修改成功");
         }
+        // 校验姓名和身份证 是否真实
+//        Map map = IdCardUtil.checkIdCard(userRealname.getIdno(), userRealname.getName());
+//        Boolean success = (Boolean)map.get("success");
+//        if(!success){
+//            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW,"身份信息校验失败:"+map.get("message"));
+//        }
         // 6.1  开通自媒体账户
         WmUser wmUser = createWmUser(apUser);
         // 6.2  创建作者信息
