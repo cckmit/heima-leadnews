@@ -1,5 +1,6 @@
 package com.heima.user.controller.v1;
 
+import com.heima.common.constants.admin.AdminConstants;
 import com.heima.model.common.dtos.ResponseResult;
 import com.heima.model.user.dtos.AuthDto;
 import com.heima.user.service.ApUserRealnameService;
@@ -17,9 +18,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class ApUserRealnameController {
     @Autowired
     private ApUserRealnameService userRealnameService;
+
     @ApiOperation("根据状态查询实名认证列表")
     @PostMapping("/list")
     public ResponseResult loadListByStatus(@RequestBody AuthDto dto){
         return userRealnameService.loadListByStatus(dto);
+    }
+
+    @ApiOperation("根据id审核通过接口")
+    @PostMapping("/authPass")
+    public ResponseResult authPass(@RequestBody AuthDto dto){
+        return userRealnameService.updateStatusById(dto, AdminConstants.PASS_AUTH);
+    }
+
+    @ApiOperation("根据id审核驳回接口")
+    @PostMapping("/authFail")
+    public ResponseResult authFail(@RequestBody AuthDto dto){
+        return userRealnameService.updateStatusById(dto, AdminConstants.FAIL_AUTH);
     }
 }

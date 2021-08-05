@@ -17,3 +17,13 @@ mybatis-plus:
   mapper-locations: classpath*:mapper/*.xml
   # 设置别名包扫描路径，通过该属性可以给包中的类注册别名
   type-aliases-package: com.heima.model.user.pojos
+feign:
+  hystrix:
+    enabled: true  # 开启服务熔断功能
+hystrix:
+  command:
+    default:
+      execution.isolation.thread.timeoutInMilliseconds: 5000 # 设置线程隔离时间
+ribbon:
+  ReadTimeout: 5000   # 读取超时时长
+  ConnectTimeout: 2000   # 建立链接的超时时长

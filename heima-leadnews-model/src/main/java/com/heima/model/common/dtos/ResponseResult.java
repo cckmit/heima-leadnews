@@ -96,22 +96,22 @@ public class ResponseResult<T> implements Serializable {
         return this;
     }
 
-    public static void main(String[] args) {
-        String okResult = JSON.toJSONString(ResponseResult.okResult());
-        System.out.println(okResult);
-
-        ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN,"你得登录");
-
-        Map map = new HashMap();
-        map.put("name","xiaoming");
-        map.put("age","88");
-        System.out.println(JSON.toJSONString(ResponseResult.okResult(map)));
-
-
-        PageResponseResult responseResult = new PageResponseResult(1,10,77L);
-        ArrayList<Object> objects = new ArrayList<>();
-        responseResult.setData(objects);
-
-
-    }
+//    public static void main(String[] args) {
+//        String okResult = JSON.toJSONString(ResponseResult.okResult());
+//        System.out.println(okResult);
+//
+//        ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN,"你得登录");
+//
+//        Map map = new HashMap();
+//        map.put("name","xiaoming");
+//        map.put("age","88");
+//        System.out.println(JSON.toJSONString(ResponseResult.okResult(map)));
+//
+//
+//        PageResponseResult responseResult = new PageResponseResult(1,10,77L);
+//        ArrayList<Object> objects = new ArrayList<>();
+//        responseResult.setData(objects);
+//
+//
+//    }
 }
