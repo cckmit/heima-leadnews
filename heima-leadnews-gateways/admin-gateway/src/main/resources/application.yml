@@ -31,15 +31,4 @@ spring:
             - Path=/user/**
           filters:
             - StripPrefix= 1
-        - id: wemedia
-          uri: lb://leadnews-wemedia
-          predicates:
-            - Path=/wemedia/**
-          filters:
-            - StripPrefix= 1
-        - id: article
-          uri: lb://leadnews-article
-          predicates:
-            - Path=/article/**
-          filters:
-            - StripPrefix= 1
+

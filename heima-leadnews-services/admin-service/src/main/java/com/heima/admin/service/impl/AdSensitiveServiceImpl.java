@@ -38,9 +38,12 @@ public class AdSensitiveServiceImpl extends ServiceImpl<AdSensitiveMapper, AdSen
         LambdaQueryWrapper<AdSensitive> queryWrapper = Wrappers.<AdSensitive>lambdaQuery().like(StringUtils.isNoneBlank(dto.getName()), AdSensitive::getSensitives, dto.getName());
         IPage<AdSensitive> pageResult = page(page, queryWrapper);
         //3.返回结果
-        ResponseResult ResponseResult = new PageResponseResult(dto.getPage(), dto.getSize(), pageResult.getTotal());
-        ResponseResult.setData(pageResult.getRecords());
-        return ResponseResult;
+        ResponseResult responseResult = new PageResponseResult(dto.getPage(), dto.getSize(), pageResult.getTotal());
+        responseResult.setData(pageResult.getRecords());
+        return responseResult;
+//        PageResponseResult pageResponseResult = new PageResponseResult(dto.getPage(), dto.getSize(), pageResult.getTotal());
+//        pageResponseResult.setData(pageResult.getRecords());
+//        return pageResponseResult;
     }
 
     @Override

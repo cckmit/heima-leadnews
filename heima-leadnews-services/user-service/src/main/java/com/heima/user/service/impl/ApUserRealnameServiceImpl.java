@@ -19,6 +19,7 @@ import com.heima.model.wemedia.pojos.WmUser;
 import com.heima.user.mapper.ApUserMapper;
 import com.heima.user.mapper.ApUserRealnameMapper;
 import com.heima.user.service.ApUserRealnameService;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,7 @@ public class ApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMapper,
 
 
     @Override
+    @GlobalTransactional(timeoutMills = 60000, rollbackFor = Exception.class)
     public ResponseResult updateStatusById(AuthDto dto, Short status) {
 
         //1.校验参数
@@ -132,6 +134,7 @@ public class ApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMapper,
         }
         return saveResult.getData(); // 回去带有wmUserId的自媒体账户信息
     }
+
     @Autowired
     ArticleFeign articleFeign;
 
@@ -139,12 +142,12 @@ public class ApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMapper,
         //1.校验参数
         //确认远程调用是否失败
         ResponseResult<ApAuthor> apAuthorResult = articleFeign.findByUserId(apUser.getId());
-        if (apAuthorResult.getCode().intValue()!=0) {
+        if (apAuthorResult.getCode().intValue() != 0) {
             CustException.cust(AppHttpCodeEnum.REMOTE_SERVER_ERROR);
         }
         //确认apAuthor是否已经存在
-        if (apAuthorResult.getData()!=null) {
-            CustException.cust(AppHttpCodeEnum.DATA_EXIST,"作者账户已经存在");
+        if (apAuthorResult.getData() != null) {
+            CustException.cust(AppHttpCodeEnum.DATA_EXIST, "作者账户已经存在");
         }
         //2.创造条件新建作者
         ApAuthor apAuthor = new ApAuthor();
@@ -157,7 +160,7 @@ public class ApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMapper,
         apAuthor.setWmUserId(wmUser.getId());
         ResponseResult saveResult = articleFeign.save(apAuthor);
         if (saveResult.getCode().intValue() != 0) {
-            CustException.cust(AppHttpCodeEnum.REMOTE_SERVER_ERROR,"远程调用失败，作者账户无法创建");
+            CustException.cust(AppHttpCodeEnum.REMOTE_SERVER_ERROR, "远程调用失败，作者账户无法创建");
         }
     }
 

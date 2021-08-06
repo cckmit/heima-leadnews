@@ -11,5 +11,19 @@
 
     <artifactId>wemedia-service</artifactId>
 
+    <!--分布式事务seata-->
+    <dependencies>
+        <dependency>
+            <artifactId>heima-seata-spring-boot-starter</artifactId>
+            <groupId>com.heima</groupId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!--OSS云存储-->
+        <dependency>
+            <artifactId>heima-file-spring-boot-starter</artifactId>
+            <groupId>com.heima</groupId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
 </project>
