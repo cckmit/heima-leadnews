@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.heima.common.constants.wemedia.WemediaConstants;
 import com.heima.common.exception.CustException;
+import com.heima.common.exception.CustomException;
 import com.heima.model.common.dtos.PageResponseResult;
 import com.heima.model.common.dtos.ResponseResult;
 import com.heima.model.common.enums.AppHttpCodeEnum;
@@ -141,6 +142,76 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         saveCoverRelativeInfo(contentImages, wmNews, wmNewsDto);
         //3.返回结果
         return ResponseResult.okResult();
+    }
+
+    @Override
+    public ResponseResult findWmNewsById(Integer id) {
+        //1.校验参数
+        WmUser wmUser = WmThreadLocalUtils.getUser();
+        if (wmUser == null) {
+            throw new CustomException(AppHttpCodeEnum.NEED_LOGIN,"未登录");
+        }
+        if (id==null) {
+            throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST,"修改的文章不存在");
+        }
+        //2.业务实现
+        WmNews wmNews = getOne(Wrappers.<WmNews>lambdaQuery().eq(WmNews::getId, id));
+        if (wmNews==null) {
+            throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST,"修改的文章不存在");
+        }
+        ResponseResult responseResult = ResponseResult.okResult(wmNews);
+        responseResult.setHost(website);
+        //3.返回结果
+        return responseResult;
+    }
+
+    @Override
+    public ResponseResult delNews(Integer id) {
+        //1.校验参数
+        //1.校验参数
+        WmUser wmUser = WmThreadLocalUtils.getUser();
+        if (wmUser == null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN,"未登录");
+        }
+        if (id==null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST,"删除的文章不存在");
+        }
+        //2.业务实现
+        WmNews wmNews = getOne(Wrappers.<WmNews>lambdaQuery().eq(WmNews::getId, id));
+        if (wmNews==null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST,"删除的文章不存在");
+        }
+        if (wmNews.getEnable().equals(WemediaConstants.WM_NEWS_UP) || wmNews.getStatus().equals(WemediaConstants.WM_NEWS_PUBLISH_STATUS)) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST,"文章已发布无法删除");
+        }
+        //3.返回结果
+        removeById(id);
+        return ResponseResult.okResult();
+    }
+
+    @Override
+    public ResponseResult downOrUp(WmNewsDto dto) {
+        //1.校验参数
+        if (dto==null) {
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
+        }
+        //查询文章
+        WmNews wmNews = getById(dto.getId());
+        if (wmNews==null) {
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
+        }
+        //判断文章是否发布
+        if (wmNews.getStatus().equals(WemediaConstants.WM_NEWS_PUBLISH_STATUS)) {
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW,"此文章已经发布，无法上下架");
+        }
+        //2.业务实现
+        if (dto.getEnable()==null&&dto.getEnable().intValue()!=-1&&dto.getEnable().intValue()!=0) {
+            CustException.cust(AppHttpCodeEnum.PARAM_INVALID);
+        }
+        wmNews.setEnable(dto.getEnable());
+        updateById(wmNews);
+        //3.返回结果
+        return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
     }
 
     private void saveCoverRelativeInfo(List<String> contentImages, WmNews wmNews, WmNewsDto wmNewsDto) {

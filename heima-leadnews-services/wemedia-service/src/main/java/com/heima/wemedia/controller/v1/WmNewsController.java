@@ -6,10 +6,8 @@ import com.heima.wemedia.service.WmNewsService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 @Api(value = "自媒体文章管理API",tags = "自媒体文章管理API")
 @RestController
 @RequestMapping("/api/v1/news")
@@ -26,5 +24,23 @@ public class WmNewsController {
     @PostMapping("/submit")
     public ResponseResult submitNews(@RequestBody WmNewsDto wmNews) {
         return wmNewsService.submitNews(wmNews);
+    }
+
+    @GetMapping("/one/{id}")
+    public ResponseResult findWmNewsById(@PathVariable("id") Integer id) {
+
+        return wmNewsService.findWmNewsById(id);
+    }
+
+    @ApiOperation(value = "修改文章",notes = "修改文章")
+    @GetMapping("/del_news/{id}")
+    public ResponseResult delNews(@PathVariable("id") Integer id) {
+        return wmNewsService.delNews(id);
+    }
+
+    @ApiOperation(value = "自媒体文章上架或下架",notes = "enable 上架: 1 下架: 0")
+    @PostMapping("/down_or_up")
+    public ResponseResult downOrUp(@RequestBody WmNewsDto dto) {
+        return wmNewsService.downOrUp(dto);
     }
 }
