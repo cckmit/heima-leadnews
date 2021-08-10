@@ -12,5 +12,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>oss-test</module>
+        <module>kafka-test</module>
     </modules>
 </project>

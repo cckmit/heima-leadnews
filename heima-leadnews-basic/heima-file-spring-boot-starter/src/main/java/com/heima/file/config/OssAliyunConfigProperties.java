@@ -100,4 +100,5 @@ public class OssAliyunConfigProperties implements Serializable {
     private String whiteList;
 
 
+
 }

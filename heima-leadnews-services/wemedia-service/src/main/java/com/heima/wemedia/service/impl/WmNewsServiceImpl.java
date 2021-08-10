@@ -119,10 +119,13 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         wmNews.setCreatedTime(new Date());
         wmNews.setSubmitedTime(new Date());
         wmNews.setEnable(WemediaConstants.WM_NEWS_UP); // 上架
+        System.out.println(wmNews.getId());
         //如果id为空，保存wmNews
         if (wmNewsDto.getId() == null) {
             save(wmNews);
+            System.out.println(wmNews.getId());
         }
+        System.out.println(wmNews.getId());
         //如果id不为空，删除素材与文章的关系后进行更新
         wmNewsMaterialMapper.delete(Wrappers.<WmNewsMaterial>lambdaQuery().eq(WmNewsMaterial::getNewsId, wmNewsDto.getId()));
         updateById(wmNews);
@@ -149,15 +152,15 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //1.校验参数
         WmUser wmUser = WmThreadLocalUtils.getUser();
         if (wmUser == null) {
-            throw new CustomException(AppHttpCodeEnum.NEED_LOGIN,"未登录");
+            throw new CustomException(AppHttpCodeEnum.NEED_LOGIN, "未登录");
         }
-        if (id==null) {
-            throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST,"修改的文章不存在");
+        if (id == null) {
+            throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST, "修改的文章不存在");
         }
         //2.业务实现
         WmNews wmNews = getOne(Wrappers.<WmNews>lambdaQuery().eq(WmNews::getId, id));
-        if (wmNews==null) {
-            throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST,"修改的文章不存在");
+        if (wmNews == null) {
+            throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST, "修改的文章不存在");
         }
         ResponseResult responseResult = ResponseResult.okResult(wmNews);
         responseResult.setHost(website);
@@ -171,18 +174,18 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //1.校验参数
         WmUser wmUser = WmThreadLocalUtils.getUser();
         if (wmUser == null) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN,"未登录");
+            return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN, "未登录");
         }
-        if (id==null) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST,"删除的文章不存在");
+        if (id == null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "删除的文章不存在");
         }
         //2.业务实现
         WmNews wmNews = getOne(Wrappers.<WmNews>lambdaQuery().eq(WmNews::getId, id));
-        if (wmNews==null) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST,"删除的文章不存在");
+        if (wmNews == null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "删除的文章不存在");
         }
         if (wmNews.getEnable().equals(WemediaConstants.WM_NEWS_UP) || wmNews.getStatus().equals(WemediaConstants.WM_NEWS_PUBLISH_STATUS)) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST,"文章已发布无法删除");
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "文章已发布无法删除");
         }
         //3.返回结果
         removeById(id);
@@ -192,20 +195,20 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
     @Override
     public ResponseResult downOrUp(WmNewsDto dto) {
         //1.校验参数
-        if (dto==null) {
+        if (dto == null) {
             CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
         }
         //查询文章
         WmNews wmNews = getById(dto.getId());
-        if (wmNews==null) {
+        if (wmNews == null) {
             CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
         }
         //判断文章是否发布
         if (wmNews.getStatus().equals(WemediaConstants.WM_NEWS_PUBLISH_STATUS)) {
-            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW,"此文章已经发布，无法上下架");
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "此文章已经发布，无法上下架");
         }
         //2.业务实现
-        if (dto.getEnable()==null&&dto.getEnable().intValue()!=-1&&dto.getEnable().intValue()!=0) {
+        if (dto.getEnable() == null && dto.getEnable().intValue() != -1 && dto.getEnable().intValue() != 0) {
             CustException.cust(AppHttpCodeEnum.PARAM_INVALID);
         }
         wmNews.setEnable(dto.getEnable());
@@ -237,7 +240,7 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //保存封面图片与文章的关系
         if (CollectionUtils.isNotEmpty(images)) {
             List<String> imagesList = images.stream().map(url -> url.replaceAll(website, "")).collect(Collectors.toList());
-            saveRelativeInfo(imagesList,wmNews.getId(),WemediaConstants.WM_IMAGE_REFERENCE);
+            saveRelativeInfo(imagesList, wmNews.getId(), WemediaConstants.WM_IMAGE_REFERENCE);
         }
 
     }
