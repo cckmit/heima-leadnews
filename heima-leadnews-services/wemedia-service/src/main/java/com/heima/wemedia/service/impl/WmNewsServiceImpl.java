@@ -1,5 +1,6 @@
 package com.heima.wemedia.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -7,6 +8,7 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.heima.common.constants.message.NewsAutoScanConstants;
 import com.heima.common.constants.wemedia.WemediaConstants;
 import com.heima.common.exception.CustException;
 import com.heima.common.exception.CustomException;
@@ -29,12 +31,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +43,9 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
 
     @Value("${file.oss.web-site}")
     String website;
+
+    @Autowired
+    KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
     public ResponseResult findList(WmNewsPageReqDto dto) {
@@ -137,12 +140,22 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //抽取content里的图片内容
         List<String> contentImages = parseContentImages(wmNewsDto.getContent());
         //保存content图片与文章的关系
-        if (contentImages != null) {
+        if (contentImages.size()>0) {
             saveRelativeInfo(contentImages, wmNews.getId(), WemediaConstants.WM_CONTENT_REFERENCE);
         }
+        //如果文章和封面都是无图，直接返回
+
         //保存封面图片与文章的关系，封面图片需要从内容图片里面选，dto用来传选择的封面status
         //wnNews用来设置封面的模式
-        saveCoverRelativeInfo(contentImages, wmNews, wmNewsDto);
+        if (wmNews.getStatus() == WmNews.Status.SUBMIT.getCode()) {
+            if (contentImages.size()>0) {
+                saveCoverRelativeInfo(contentImages, wmNews, wmNewsDto);
+            }
+            Map map = new HashMap<>();
+            map.put("newsId", wmNews.getId());
+            kafkaTemplate.send(NewsAutoScanConstants.WM_NEWS_AUTO_SCAN_TOPIC, JSON.toJSONString(map));
+            log.info(" 文章自动审核消息 已成功发送   文章id: {}", wmNews.getId());
+        }
         //3.返回结果
         return ResponseResult.okResult();
     }
@@ -150,10 +163,10 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
     @Override
     public ResponseResult findWmNewsById(Integer id) {
         //1.校验参数
-        WmUser wmUser = WmThreadLocalUtils.getUser();
-        if (wmUser == null) {
-            throw new CustomException(AppHttpCodeEnum.NEED_LOGIN, "未登录");
-        }
+//        WmUser wmUser = WmThreadLocalUtils.getUser();
+//        if (wmUser == null) {
+//            throw new CustomException(AppHttpCodeEnum.NEED_LOGIN, "未登录");
+//        }
         if (id == null) {
             throw new CustomException(AppHttpCodeEnum.DATA_NOT_EXIST, "修改的文章不存在");
         }
@@ -174,18 +187,20 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //1.校验参数
         WmUser wmUser = WmThreadLocalUtils.getUser();
         if (wmUser == null) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN, "未登录");
-        }
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "删除的文章不存在");
+    }
         if (id == null) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "删除的文章不存在");
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "删除的文章不存在");
         }
         //2.业务实现
         WmNews wmNews = getOne(Wrappers.<WmNews>lambdaQuery().eq(WmNews::getId, id));
         if (wmNews == null) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "删除的文章不存在");
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "删除的文章不存在");
         }
-        if (wmNews.getEnable().equals(WemediaConstants.WM_NEWS_UP) || wmNews.getStatus().equals(WemediaConstants.WM_NEWS_PUBLISH_STATUS)) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "文章已发布无法删除");
+        if (wmNews.getEnable().equals(WemediaConstants.WM_NEWS_UP) && wmNews.getStatus().equals(WmNews.Status.PUBLISHED.getCode())) {
+//            throw new CustomException(AppHttpCodeEnum.DATA_NOT_ALLOW, "该文章已发布，并且是上架状态，不能删除");
+           CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "该文章已发布，并且是上架状态，不能删除");
+
         }
         //3.返回结果
         removeById(id);
@@ -204,8 +219,8 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
             CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
         }
         //判断文章是否发布
-        if (wmNews.getStatus().equals(WemediaConstants.WM_NEWS_PUBLISH_STATUS)) {
-            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "此文章已经发布，无法上下架");
+        if (!wmNews.getStatus().equals(WemediaConstants.WM_NEWS_PUBLISH_STATUS)) {
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "此文章不是发布状态，无法上下架");
         }
         //2.业务实现
         if (dto.getEnable() == null && dto.getEnable().intValue() != -1 && dto.getEnable().intValue() != 0) {
@@ -249,9 +264,10 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //保存内容图片与文章的关系到关系表
         //type=0，newsid，材料id
         //首先要根据内容图片查出来材料的集合，再查出来材料id
-        List<WmMaterial> wmMaterials = wmMaterialMapper.selectList(Wrappers.<WmMaterial>lambdaQuery().in(WmMaterial::getUrl, contentImages)
+        List<WmMaterial> wmMaterials = wmMaterialMapper.selectList(Wrappers.<WmMaterial>lambdaQuery()
+                .in(WmMaterial::getUrl, contentImages)
                 .eq(WmMaterial::getUserId, WmThreadLocalUtils.getUser().getId()));
-        if (wmMaterials == null) {
+        if (CollectionUtils.isEmpty(wmMaterials)) {
             CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST, "引用的素材不存在");
         }
         //将素材信息转换为map集合，key url，value id

@@ -54,7 +54,7 @@ public class WmMaterialServiceImpl extends ServiceImpl<WmMaterialMapper, WmMater
         }
         WmUser user = WmThreadLocalUtils.getUser();
         if (user == null) {
-            CustException.cust(AppHttpCodeEnum.NEED_LOGIN);
+            CustException.cust(AppHttpCodeEnum.NEED_LOGIN,"登录超时");
         }
         //校验图片格式对不对
         // 获取原始文件名称

@@ -2,6 +2,7 @@ package com.heima.wemedia.controller.v1;
 import com.heima.model.common.dtos.ResponseResult;
 import com.heima.model.wemedia.dtos.WmNewsDto;
 import com.heima.model.wemedia.dtos.WmNewsPageReqDto;
+import com.heima.model.wemedia.pojos.WmNews;
 import com.heima.wemedia.service.WmNewsService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -32,7 +33,7 @@ public class WmNewsController {
         return wmNewsService.findWmNewsById(id);
     }
 
-    @ApiOperation(value = "修改文章",notes = "修改文章")
+    @ApiOperation(value = "删除文章",notes = "删除文章")
     @GetMapping("/del_news/{id}")
     public ResponseResult delNews(@PathVariable("id") Integer id) {
         return wmNewsService.delNews(id);
@@ -42,5 +43,17 @@ public class WmNewsController {
     @PostMapping("/down_or_up")
     public ResponseResult downOrUp(@RequestBody WmNewsDto dto) {
         return wmNewsService.downOrUp(dto);
+    }
+
+    /**
+     * 修改文章
+     * @param wmNews
+     * @return
+     */
+    @ApiOperation("根据id修改自媒体文章")
+    @PutMapping("/update")
+    public ResponseResult updateWmNews(@RequestBody WmNews wmNews) {
+        wmNewsService.updateById(wmNews);
+        return ResponseResult.okResult();
     }
 }

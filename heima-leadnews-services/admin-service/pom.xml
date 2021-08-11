@@ -17,5 +17,11 @@
             <artifactId>heima-aliyunsecurity-spring-boot-starter</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <!--分布式事务Seata-->
+        <dependency>
+            <groupId>com.heima</groupId>
+            <artifactId>heima-seata-spring-boot-starter</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
