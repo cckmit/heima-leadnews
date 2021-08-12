@@ -13,6 +13,8 @@ public class WemediaConstants {
 
     // 文章状态
     public static final Short WM_NEWS_DRAFT_STATUS = 0; //草稿
+    public static final Short WM_NEWS_AUTH_PASS = 4;
+    public static final Short WM_NEWS_AUTH_FAIL = 2;
     public static final Short WM_NEWS_SUMMIT_STATUS = 1; //提交
     public static final Short WM_NEWS_AUTHED_STATUS = 8; //审核通过
     public static final Short WM_NEWS_PUBLISH_STATUS = 9; //已发布

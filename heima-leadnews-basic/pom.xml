@@ -15,5 +15,6 @@
         <module>heima-exception-spring-boot-starter</module>
         <module>heima-seata-spring-boot-starter</module>
         <module>heima-file-spring-boot-starter</module>
+        <module>heima-schedule-spring-boot-starter</module>
     </modules>
 </project>

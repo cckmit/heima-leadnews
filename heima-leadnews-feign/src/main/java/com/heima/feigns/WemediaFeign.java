@@ -6,6 +6,9 @@ import com.heima.model.wemedia.pojos.WmNews;
 import com.heima.model.wemedia.pojos.WmUser;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
 @FeignClient(
         value = "leadnews-wemedia",
         fallbackFactory = WemediaFeignFallback.class,
@@ -24,4 +27,8 @@ public interface WemediaFeign {
     public ResponseResult<WmUser> save(@RequestBody WmUser wmUser);
     @GetMapping("/api/v1/user/findByName/{name}")
     public ResponseResult<WmUser> findByName(@PathVariable("name") String name);
+    //=====================新增远程接口=======================
+    @GetMapping("/api/v1/news/findRelease")
+    ResponseResult<List<Integer>> findRelease();
+    //=====================新增远程接口=======================
 }

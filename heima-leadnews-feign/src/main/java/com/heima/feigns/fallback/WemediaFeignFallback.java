@@ -7,6 +7,9 @@ import com.heima.model.wemedia.pojos.WmUser;
 import feign.hystrix.FallbackFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+
 @Component
 @Slf4j
 public class WemediaFeignFallback implements FallbackFactory<WemediaFeign> {
@@ -41,6 +44,12 @@ public class WemediaFeignFallback implements FallbackFactory<WemediaFeign> {
             public ResponseResult<WmUser> findByName(String name) {
                 log.error("参数: {}",name);
                 log.error("自媒体 findByName 远程调用出错啦 ~~~ !!!! {} ",throwable);
+                return ResponseResult.errorResult(AppHttpCodeEnum.SERVER_ERROR);
+            }
+
+            @Override
+            public ResponseResult<List<Integer>> findRelease() {
+                log.error("自媒体 findRelease 远程调用出错啦 ~~~ !!!! {} ",throwable);
                 return ResponseResult.errorResult(AppHttpCodeEnum.SERVER_ERROR);
             }
         };

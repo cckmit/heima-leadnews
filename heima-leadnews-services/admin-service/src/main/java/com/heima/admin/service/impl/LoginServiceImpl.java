@@ -1,5 +1,6 @@
 package com.heima.admin.service.impl;
 
+import com.alibaba.nacos.common.util.Md5Utils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 
 import java.util.*;
 
@@ -47,9 +49,9 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, AdUser> implement
         if (user.getSalt() == null) {
             salt = "";
         }
-        String loginPwd = userDto.getPassword() + salt;
-        String userPwd = user.getPassword() + salt;
-        if (!loginPwd.equals(userPwd)) {
+        String loginPwd  = DigestUtils.md5DigestAsHex((userDto.getPassword()+ salt).getBytes());
+        String userPwd=user.getPassword();
+        if (!loginPwd.equals(user.getPassword())) {
             CustException.cust(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
         }
         // 4. 判断用户状态是否为 9 (正常)

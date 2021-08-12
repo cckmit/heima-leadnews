@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.heima.common.constants.message.NewsAutoScanConstants;
+import com.heima.common.constants.message.WmNewsMessageConstants;
 import com.heima.common.constants.wemedia.WemediaConstants;
 import com.heima.common.exception.CustException;
 import com.heima.common.exception.CustomException;
@@ -16,12 +17,14 @@ import com.heima.model.common.dtos.PageResponseResult;
 import com.heima.model.common.dtos.ResponseResult;
 import com.heima.model.common.enums.AppHttpCodeEnum;
 import com.heima.model.threadlocal.WmThreadLocalUtils;
+import com.heima.model.wemedia.dtos.NewsAuthDto;
 import com.heima.model.wemedia.dtos.WmNewsDto;
 import com.heima.model.wemedia.dtos.WmNewsPageReqDto;
 import com.heima.model.wemedia.pojos.WmMaterial;
 import com.heima.model.wemedia.pojos.WmNews;
 import com.heima.model.wemedia.pojos.WmNewsMaterial;
 import com.heima.model.wemedia.pojos.WmUser;
+import com.heima.model.wemedia.vos.WmNewsVo;
 import com.heima.wemedia.mapper.WmMaterialMapper;
 import com.heima.wemedia.mapper.WmNewsMapper;
 import com.heima.wemedia.mapper.WmNewsMaterialMapper;
@@ -91,6 +94,9 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
     @Autowired
     WmMaterialMapper wmMaterialMapper;
 
+    @Autowired
+    WmNewsMapper wmNewsMapper;
+
     @Override
     public ResponseResult submitNews(WmNewsDto wmNewsDto) {
         //1.校验参数
@@ -140,7 +146,7 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //抽取content里的图片内容
         List<String> contentImages = parseContentImages(wmNewsDto.getContent());
         //保存content图片与文章的关系
-        if (contentImages.size()>0) {
+        if (CollectionUtils.isNotEmpty(contentImages)) {
             saveRelativeInfo(contentImages, wmNews.getId(), WemediaConstants.WM_CONTENT_REFERENCE);
         }
         //如果文章和封面都是无图，直接返回
@@ -148,9 +154,9 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         //保存封面图片与文章的关系，封面图片需要从内容图片里面选，dto用来传选择的封面status
         //wnNews用来设置封面的模式
         if (wmNews.getStatus() == WmNews.Status.SUBMIT.getCode()) {
-            if (contentImages.size()>0) {
-                saveCoverRelativeInfo(contentImages, wmNews, wmNewsDto);
-            }
+
+            saveCoverRelativeInfo(contentImages, wmNews, wmNewsDto);
+
             Map map = new HashMap<>();
             map.put("newsId", wmNews.getId());
             kafkaTemplate.send(NewsAutoScanConstants.WM_NEWS_AUTO_SCAN_TOPIC, JSON.toJSONString(map));
@@ -188,7 +194,7 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         WmUser wmUser = WmThreadLocalUtils.getUser();
         if (wmUser == null) {
             CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "删除的文章不存在");
-    }
+        }
         if (id == null) {
             CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "删除的文章不存在");
         }
@@ -199,7 +205,7 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         }
         if (wmNews.getEnable().equals(WemediaConstants.WM_NEWS_UP) && wmNews.getStatus().equals(WmNews.Status.PUBLISHED.getCode())) {
 //            throw new CustomException(AppHttpCodeEnum.DATA_NOT_ALLOW, "该文章已发布，并且是上架状态，不能删除");
-           CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "该文章已发布，并且是上架状态，不能删除");
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_ALLOW, "该文章已发布，并且是上架状态，不能删除");
 
         }
         //3.返回结果
@@ -228,7 +234,79 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         }
         wmNews.setEnable(dto.getEnable());
         updateById(wmNews);
+        if(wmNews.getArticleId()!=null){
+            Map<String,Object> mesMap = new HashMap<>();
+            mesMap.put("enable",dto.getEnable());
+            mesMap.put("articleId",wmNews.getArticleId());
+            kafkaTemplate.send(WmNewsMessageConstants.WM_NEWS_UP_OR_DOWN_TOPIC,JSON.toJSONString(mesMap));
+        }
         //3.返回结果
+        return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
+    }
+
+    @Override
+    public List<Integer> findRelease() {
+        //查出wmnews的集合
+        List<WmNews> list = list(Wrappers.<WmNews>lambdaQuery().in(WmNews::getStatus, 4, 8)
+                .le(WmNews::getPublishTime, new Date()));
+        //stream出需要自动审核的文章id集合传给admin
+        List<Integer> idList = list.stream().map(WmNews::getId).collect(Collectors.toList());
+        return idList;
+    }
+
+    @Override
+    public ResponseResult findList(NewsAuthDto dto) {
+        //1.校验参数
+//        if (dto==null) {
+//            CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
+//        }
+        dto.checkParam();
+        //TODO 为什么这里要提出来这个当前页的参数
+        Integer currentPage = dto.getPage();
+        dto.setPage((currentPage - 1) * dto.getSize());
+        //2.业务实现
+        if (StringUtils.isNotBlank(dto.getTitle())) {
+            dto.setTitle("%" + dto.getTitle() + "%");
+        }
+        List<WmNewsVo> listAndPageResult = wmNewsMapper.findListAndPage(dto);
+        long listCount = wmNewsMapper.findListCount(dto);
+        PageResponseResult responseResult = new PageResponseResult(currentPage, dto.getSize(), listCount);
+        responseResult.setData(listAndPageResult);
+        //3.返回结果
+        return responseResult;
+    }
+
+    @Override
+    public ResponseResult findWmNewsVo(Integer id) {
+        if (id == null) {
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
+        }
+        WmNewsVo wmNewsVo = wmNewsMapper.findWmNewsVoById(id);
+        if (wmNewsVo == null) {
+            CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
+        }
+        ResponseResult responseResult = ResponseResult.okResult(wmNewsVo);
+        responseResult.setHost(website);
+        return responseResult;
+    }
+
+    @Override
+    public ResponseResult updateStatus(Short status, NewsAuthDto dto) {
+        //1.参数检查
+        if(dto == null || dto.getId() == null){
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
+        }
+        //2.查询文章
+        WmNews wmNews = getById(dto.getId());
+        if(wmNews == null){
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
+        }
+        //3.修改文章状态
+        wmNews.setStatus(status);
+        if(StringUtils.isNotBlank(dto.getMsg())){
+            wmNews.setReason(dto.getMsg());
+        }
+        updateById(wmNews);
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
     }
 
@@ -237,8 +315,8 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         List<String> images = wmNewsDto.getImages();
         //对状态进行判断
         if (wmNewsDto.getType().equals(WemediaConstants.WM_NEWS_TYPE_AUTO)) {
-            if (CollectionUtils.isEmpty(contentImages)) {
-                CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST, "图片内容为空");
+            if (contentImages.size() == 0) {
+                wmNews.setType(WemediaConstants.WM_NEWS_NONE_IMAGE);
                 images = null;
             } else if (contentImages.size() <= 2) {
                 wmNews.setType(WemediaConstants.WM_NEWS_SINGLE_IMAGE);
