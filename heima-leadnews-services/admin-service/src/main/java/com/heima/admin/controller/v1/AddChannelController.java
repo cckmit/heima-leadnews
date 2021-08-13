@@ -1,5 +1,6 @@
 package com.heima.admin.controller.v1;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.heima.admin.service.ChannelService;
 import com.heima.model.admin.dtos.ChannelDto;
 import com.heima.model.admin.pojos.AdChannel;
@@ -18,6 +19,14 @@ public class AddChannelController {
 
     @Autowired
     private ChannelService channelService;
+
+    @ApiOperation("查询全部频道")
+    @GetMapping("/channels")
+    public ResponseResult findAll() {
+        List<AdChannel> list = channelService.list(Wrappers.<AdChannel>lambdaQuery()
+                .eq(AdChannel::getStatus,true).orderByAsc(AdChannel::getOrd));
+        return ResponseResult.okResult(list);
+    }
 
     @PostMapping("/list")
     @ApiOperation("频道分页列表查询")
@@ -43,10 +52,5 @@ public class AddChannelController {
         return channelService.delete(id);
     }
 
-    @ApiOperation("查询全部频道")
-    @GetMapping("/channels")
-    public ResponseResult findAll() {
-        List<AdChannel> list = channelService.list();
-        return ResponseResult.okResult(list);
-    }
+
 }

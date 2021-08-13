@@ -8,8 +8,10 @@ import com.heima.article.mapper.ApArticleMapper;
 import com.heima.article.mapper.AuthorMapper;
 import com.heima.article.service.ApArticleService;
 import com.heima.article.service.GeneratePageService;
+import com.heima.common.constants.article.ArticleConstants;
 import com.heima.common.exception.CustException;
 import com.heima.model.article.dtos.ArticleDto;
+import com.heima.model.article.dtos.ArticleHomeDto;
 import com.heima.model.article.pojos.ApArticle;
 import com.heima.model.article.pojos.ApArticleConfig;
 import com.heima.model.article.pojos.ApArticleContent;
@@ -17,10 +19,13 @@ import com.heima.model.article.pojos.ApAuthor;
 import com.heima.model.common.dtos.ResponseResult;
 import com.heima.model.common.enums.AppHttpCodeEnum;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.A;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.util.Date;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -28,6 +33,15 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
 
     @Autowired
     GeneratePageService generatePageService;
+
+    @Autowired
+    ApArticleMapper apArticleMapper;
+
+    @Value("${file.minio.realPath}")
+    String realPath;
+
+    @Value("${file.oss.web-site}")
+    String website;
 
     @Override
     public ResponseResult saveArticle(ArticleDto articleDto) {
@@ -40,6 +54,35 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
         saveConfigAndContent(articleDto, apArticle);
         generatePageService.generateArticlePage(apArticle.getId());
         return ResponseResult.okResult(apArticle.getId());
+    }
+
+    @Override
+    public ResponseResult load(Short loadtype, ArticleHomeDto dto) {
+        //1.校验参数  分页   频道标签  最大时间  最小时间   type类型 (0   1)
+        if (dto.getSize()==null || dto.getSize()<1) {
+            dto.setSize(10);
+        }
+        if (StringUtils.isBlank(dto.getTag())) {
+            dto.setTag(ArticleConstants.DEFAULT_TAG);
+        }
+        if (dto.getMaxBehotTime()==null) {
+            dto.setMaxBehotTime(new Date());
+        }
+        if (dto.getMinBehotTime()==null) {
+            dto.setMinBehotTime(new Date());
+        }
+        if (!(loadtype.equals(ArticleConstants.LOADTYPE_LOAD_NEW)&&loadtype.equals(ArticleConstants.LOADTYPE_LOAD_MORE))) {
+            loadtype=ArticleConstants.LOADTYPE_LOAD_MORE;
+        }
+        //2.业务实现，调用mapper进行两表查询
+        List<ApArticle> apArticles = apArticleMapper.loadArticleList(dto, loadtype);
+        for (ApArticle apArticle : apArticles) {
+            apArticle.setStaticUrl(realPath+apArticle.getStaticUrl());
+        }
+        //3.返回结果
+        ResponseResult responseResult = ResponseResult.okResult(apArticles);
+        responseResult.setHost(website);
+        return responseResult;
     }
 
     private void saveConfigAndContent(ArticleDto articleDto, ApArticle apArticle) {

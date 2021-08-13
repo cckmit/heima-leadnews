@@ -59,5 +59,4 @@ file:
     secretKey: minio123
     bucket: hmtt130
     endpoint: http://192.168.200.130:9090/
-    readPath: http://192.168.200.130:9090/
-    prefix: article
+    realPath: http://192.168.200.130:9090/

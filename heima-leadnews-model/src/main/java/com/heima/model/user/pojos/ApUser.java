@@ -75,7 +75,7 @@ public class ApUser implements Serializable {
        1锁定
      */
     @TableField("status")
-    private Boolean status;
+    private Short status;
 
     /**
      * 0 普通用户
