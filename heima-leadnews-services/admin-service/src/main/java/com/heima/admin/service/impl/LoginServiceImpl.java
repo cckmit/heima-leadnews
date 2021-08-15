@@ -26,6 +26,7 @@ import java.util.*;
 public class LoginServiceImpl extends ServiceImpl<LoginMapper, AdUser> implements LoginService {
     @Override
     public ResponseResult logIn(AdUserDto userDto) {
+        System.out.println("正在进行登录，登录检验中→");
         //1.校验参数
         if (userDto == null) {
             CustException.cust(AppHttpCodeEnum.PARAM_INVALID, "登录信息不能为空");
@@ -49,8 +50,8 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, AdUser> implement
         if (user.getSalt() == null) {
             salt = "";
         }
-        String loginPwd  = DigestUtils.md5DigestAsHex((userDto.getPassword()+ salt).getBytes());
-        String userPwd=user.getPassword();
+        String loginPwd = DigestUtils.md5DigestAsHex((userDto.getPassword() + salt).getBytes());
+        String userPwd = user.getPassword();
         if (!loginPwd.equals(user.getPassword())) {
             CustException.cust(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
         }
@@ -63,13 +64,14 @@ public class LoginServiceImpl extends ServiceImpl<LoginMapper, AdUser> implement
         updateById(user);
         // 6. 生成token 封装返回结果   {user: {用户信息}  ,  token: "令牌凭证" }
         String token = AppJwtUtil.getToken(Long.valueOf(user.getId()));
-        System.out.println(token);
+        System.out.println("本次登录用户的JWTToken→  "+token);
         AdUserVO adUserVO = new AdUserVO();
         BeanUtils.copyProperties(user, adUserVO);
         Map map = new HashMap<>();
         map.put("token", token);
         map.put("user", adUserVO);
         //3.返回结果
+        System.out.println("用户数据返回至客户端→");
         return ResponseResult.okResult(map);
 
     }

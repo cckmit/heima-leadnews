@@ -261,7 +261,7 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
 //            CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
 //        }
         dto.checkParam();
-        //TODO 为什么这里要提出来这个当前页的参数
+        //TODO 为什么这里要提出来这个当前页的参数，因为app是滑动的需要不断获取当前页
         Integer currentPage = dto.getPage();
         dto.setPage((currentPage - 1) * dto.getSize());
         //2.业务实现
