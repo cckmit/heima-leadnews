@@ -36,10 +36,15 @@ spring:
             - Path=/admin/**
           filters:
             - StripPrefix= 1
-  #行为微服务
         - id: behavior
           uri: lb://leadnews-behavior
           predicates:
             - Path=/behavior/**
+          filters:
+            - StripPrefix= 1
+        - id: comment
+          uri: lb://leadnews-comment
+          predicates:
+            - Path=/comment/**
           filters:
             - StripPrefix= 1

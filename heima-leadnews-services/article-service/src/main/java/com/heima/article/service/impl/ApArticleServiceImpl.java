@@ -24,12 +24,22 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import java.util.Date;
 import java.util.List;
+
 
 @Service
 @Slf4j
 public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle> implements ApArticleService {
+
+    @Autowired
+    AuthorMapper authorMapper;
+
+    @Autowired
+    ApArticleConfigMapper apArticleConfigMapper;
+    @Autowired
+    ApArticleContentMapper apArticleContentMapper;
 
     @Autowired
     GeneratePageService generatePageService;
@@ -37,53 +47,57 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
     @Autowired
     ApArticleMapper apArticleMapper;
 
-    @Value("${file.minio.realPath}")
-    String realPath;
+    @Value("${file.minio.readPath}")
+    String readPath;
 
     @Value("${file.oss.web-site}")
-    String website;
+    String webSite;
+
 
     @Override
     public ResponseResult saveArticle(ArticleDto articleDto) {
-        // 保存文章
-        // 基于articleDao创建apArticle
+        //1. 基于articleDto  创建ApArticle对象
         ApArticle apArticle = getApArticle(articleDto);
-        // 保存或修改文章
+        //2. 保存或修改apArticle
         saveOrUpdateArticle(apArticle);
-        // 通过apArticle和articleDto来保存 apArticleConfig apArticleContent
+        //3. 保存 config信息 及 content信息
         saveConfigAndContent(articleDto, apArticle);
+        //4. 页面静态化
         generatePageService.generateArticlePage(apArticle.getId());
-        return ResponseResult.okResult(apArticle.getId());
+        log.info("静态生成方法已经调用");
+        return  ResponseResult.okResult(apArticle.getId());// 文章的id
     }
 
     @Override
     public ResponseResult load(Short loadtype, ArticleHomeDto dto) {
-        //1.校验参数  分页   频道标签  最大时间  最小时间   type类型 (0   1)
-        if (dto.getSize()==null || dto.getSize()<1) {
+        // 1. 检查参数    分页   频道标签  最大时间  最小时间   type类型 (0   1)
+        if(dto.getSize() == null || dto.getSize() < 1){
             dto.setSize(10);
         }
         if (StringUtils.isBlank(dto.getTag())) {
             dto.setTag(ArticleConstants.DEFAULT_TAG);
         }
-        if (dto.getMaxBehotTime()==null) {
+        if(dto.getMaxBehotTime() == null){
             dto.setMaxBehotTime(new Date());
         }
-        if (dto.getMinBehotTime()==null) {
+        if(dto.getMinBehotTime() == null){
             dto.setMinBehotTime(new Date());
         }
-        if (!(loadtype.equals(ArticleConstants.LOADTYPE_LOAD_NEW)&&loadtype.equals(ArticleConstants.LOADTYPE_LOAD_MORE))) {
-            loadtype=ArticleConstants.LOADTYPE_LOAD_MORE;
+        if(!loadtype.equals(ArticleConstants.LOADTYPE_LOAD_MORE) && !loadtype.equals(ArticleConstants.LOADTYPE_LOAD_NEW)){
+            loadtype = ArticleConstants.LOADTYPE_LOAD_MORE;
         }
-        //2.业务实现，调用mapper进行两表查询
+        // 2. 调用mapper进行两表查询
         List<ApArticle> apArticles = apArticleMapper.loadArticleList(dto, loadtype);
         for (ApArticle apArticle : apArticles) {
-            apArticle.setStaticUrl(realPath+apArticle.getStaticUrl());
+            apArticle.setStaticUrl(readPath + apArticle.getStaticUrl());
         }
-        //3.返回结果
+        // 3. 封装返回结果   (host==>图片前缀    static_url => 拼接 前缀路径)
         ResponseResult responseResult = ResponseResult.okResult(apArticles);
-        responseResult.setHost(website);
+        responseResult.setHost(webSite);
         return responseResult;
     }
+
+
 
     private void saveConfigAndContent(ArticleDto articleDto, ApArticle apArticle) {
         ApArticleConfig apArticleConfig = new ApArticleConfig();
@@ -100,47 +114,35 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
         apArticleContentMapper.insert(apArticleContent);
     }
 
-    @Autowired
-    ApArticleConfigMapper apArticleConfigMapper;
-
-    @Autowired
-    ApArticleContentMapper apArticleContentMapper;
-
     private void saveOrUpdateArticle(ApArticle apArticle) {
-        if (apArticle.getId() == null) {
+        if(apArticle.getId() == null){
             // 保存文章
             apArticle.setCollection(0); // 收藏数
             apArticle.setLikes(0);// 点赞数
             apArticle.setComment(0);// 评论数
             apArticle.setViews(0); // 阅读数
             save(apArticle);
-        } else {
+        }else {
             // 修改文章  删除之前关联的配置信息   内容信息
-            ApArticle oldArticle = getById(apArticle.getId());
-            if (oldArticle == null) {
+            ApArticle article = getById(apArticle.getId());
+            if(article == null){
                 CustException.cust(AppHttpCodeEnum.DATA_NOT_EXIST);
             }
             updateById(apArticle);
-            apArticleConfigMapper.delete(Wrappers.<ApArticleConfig>lambdaQuery().eq(ApArticleConfig::getArticleId, oldArticle.getId()));
-            apArticleContentMapper.delete(Wrappers.<ApArticleContent>lambdaQuery().eq(ApArticleContent::getArticleId, oldArticle.getId()));
+            apArticleConfigMapper.delete(Wrappers.<ApArticleConfig>lambdaQuery().eq(ApArticleConfig::getArticleId,apArticle.getId()));
+            apArticleContentMapper.delete(Wrappers.<ApArticleContent>lambdaQuery().eq(ApArticleContent::getArticleId,apArticle.getId()));
         }
     }
-
-    @Autowired
-    AuthorMapper authorMapper;
 
     private ApArticle getApArticle(ArticleDto articleDto) {
         ApArticle apArticle = new ApArticle();
-        BeanUtils.copyProperties(articleDto, apArticle);
-        Integer wmUserId = articleDto.getWmUserId();
-        ApAuthor apAuthor = authorMapper.selectOne(Wrappers.<ApAuthor>lambdaQuery().eq(ApAuthor::getWmUserId, wmUserId));
-        if (apAuthor != null) {
-            apArticle.setAuthorName(apAuthor.getName());
-            apArticle.setAuthorId(Long.valueOf(apAuthor.getId()));
+        BeanUtils.copyProperties(articleDto,apArticle);
+        // 基于wmUserId查询作者信息
+        ApAuthor author = authorMapper.selectOne(Wrappers.<ApAuthor>lambdaQuery().eq(ApAuthor::getWmUserId, articleDto.getWmUserId()));
+        if(author!=null){
+            apArticle.setAuthorId(Long.valueOf(author.getId()));
+            apArticle.setAuthorName(author.getName());
         }
-        // apArticle中apAuthor的id&name apAuthor可以通过wmUser查到 wmUser可以通过wmNews查到
-
         return apArticle;
     }
-
 }
